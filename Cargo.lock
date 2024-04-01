@@ -1862,6 +1862,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "rust-numerals"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "66422db5b68622712db06379057dcf3887cc1d3d7cacd0fb37c953cd87e82ed6"
+
+[[package]]
 name = "rust-stemmers"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1981,6 +1987,7 @@ dependencies = [
  "csv-async",
  "futures",
  "html_parser",
+ "rust-numerals",
  "rust-stemmers",
  "scraper",
  "serde",
