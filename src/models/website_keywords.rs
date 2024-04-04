@@ -7,15 +7,16 @@ pub struct WebsiteKeywords {
     id: uuid::Uuid,
     keyword_id: uuid::Uuid,
     website_id: uuid::Uuid,
+    frequency: i32,
     created_at: OffsetDateTime,
     updated_at: OffsetDateTime
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InsertWebsiteKeywordsDao {
-    pub id: uuid::Uuid,
     pub keyword_id: uuid::Uuid,
-    pub website_id: uuid::Uuid
+    pub website_id: uuid::Uuid,
+    pub frequency: i32
 }
 
 impl WebsiteKeywords {
@@ -23,13 +24,14 @@ impl WebsiteKeywords {
     pub async fn insert(pool: &PgPool, insert_website_keywords_dao: InsertWebsiteKeywordsDao) -> Result<Self, sqlx::Error> {
         let row = sqlx::query!(
             r#"
-            INSERT INTO website_keywords (id, keyword_id, website_id)
+            INSERT INTO website_keywords (keyword_id, website_id, frequency)
             VALUES ($1, $2, $3)
-            RETURNING id, keyword_id, website_id, created_at, updated_at
+            RETURNING id, keyword_id, website_id, frequency, created_at, updated_at
             "#,
-            insert_website_keywords_dao.id,
             insert_website_keywords_dao.keyword_id,
-            insert_website_keywords_dao.website_id
+            insert_website_keywords_dao.website_id,
+            insert_website_keywords_dao.frequency
+            
         )
         .fetch_one(pool)
         .await?;
@@ -38,6 +40,7 @@ impl WebsiteKeywords {
             id: row.id,
             keyword_id: row.keyword_id,
             website_id: row.website_id,
+            frequency: row.frequency,
             created_at: row.created_at,
             updated_at: row.updated_at,
         })
@@ -48,7 +51,7 @@ impl WebsiteKeywords {
         sqlx::query_as!(
             WebsiteKeywords,
             r#"
-            SELECT id, keyword_id, website_id, created_at, updated_at
+            SELECT id, keyword_id, website_id, frequency,created_at, updated_at
             FROM website_keywords
             WHERE keyword_id = $1
             "#,
@@ -60,7 +63,7 @@ impl WebsiteKeywords {
         sqlx::query_as!(
             WebsiteKeywords,
             r#"
-            SELECT id, keyword_id, website_id, created_at, updated_at
+            SELECT id, keyword_id, website_id, frequency, created_at, updated_at
             FROM website_keywords
             WHERE website_id = $1
             "#,
@@ -72,7 +75,7 @@ impl WebsiteKeywords {
         sqlx::query_as!(
             WebsiteKeywords,
             r#"
-            SELECT id, keyword_id, website_id, created_at, updated_at
+            SELECT id, keyword_id, website_id, frequency, created_at, updated_at
             FROM website_keywords
             WHERE id = $1
             "#,
@@ -100,5 +103,18 @@ impl WebsiteKeywords {
             "#,
             website_id
         ).fetch_one(pool).await.map(|row| row.count.unwrap())
+    }
+    
+    pub async fn delete_by_website(pool: &PgPool, website_id: uuid::Uuid) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            r#"
+            DELETE FROM website_keywords
+            WHERE website_id = $1
+            "#,
+            website_id
+        )
+        .execute(pool)
+        .await?;
+        Ok(())
     }
 }

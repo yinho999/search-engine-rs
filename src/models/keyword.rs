@@ -1,16 +1,18 @@
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Keyword {
-    id: uuid::Uuid,
-    keyword: String,
+    pub(crate) id: uuid::Uuid,
+    pub(crate) keyword: String,
     created_at: time::OffsetDateTime,
     updated_at: time::OffsetDateTime,
 }
 
+
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InsertKeywordDao {
-    pub id: uuid::Uuid,
     pub keyword: String,
 }
 
@@ -18,11 +20,10 @@ impl Keyword {
     pub async fn insert(pool: &sqlx::PgPool, insert_keyword: InsertKeywordDao) -> Result<Self, sqlx::Error> {
         let row = sqlx::query!(
             r#"
-            INSERT INTO keywords (id, keyword)
-            VALUES ($1, $2)
+            INSERT INTO keywords ( keyword)
+            VALUES ($1)
             RETURNING id, keyword, created_at, updated_at
             "#,
-            insert_keyword.id,
             insert_keyword.keyword,
         )
             .fetch_one(pool)
@@ -36,7 +37,7 @@ impl Keyword {
         })
     }
 
-    pub async fn find_by_word(pool: &sqlx::PgPool, keyword: &str) -> Result<Vec<Self>, sqlx::Error> {
+    pub async fn find_by_word(pool: &sqlx::PgPool, keyword: &str) -> Result<Self, sqlx::Error> {
         sqlx::query_as!(
             Keyword,
             r#"
@@ -45,6 +46,21 @@ impl Keyword {
             WHERE keyword = $1
             "#,
             keyword
-        ).fetch_all(pool).await
+        ).fetch_one(pool).await
+    }
+    
+    pub async fn find_or_create(pool: &sqlx::PgPool, keyword: &str) -> Result<Self, sqlx::Error> {
+        match Self::find_by_word(pool, keyword).await{
+            Ok(keyword) => Ok(keyword),
+            Err(sqlx::Error::RowNotFound) => {
+                let insert_keyword = InsertKeywordDao{
+                    keyword: keyword.to_string(),
+                };
+                Self::insert(pool, insert_keyword).await
+            },
+            Err(e) => {
+                Err(e)
+            }
+        }
     }
 }
