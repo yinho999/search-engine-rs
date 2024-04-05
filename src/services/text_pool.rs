@@ -102,7 +102,7 @@ impl TextPool {
         let insert_website_keyword_tfidf = models::website_keyword_tfidf::InsertWebsiteKeywordTfidfDao {
             website_id: website.id,
             keyword_id: keyword.id,
-            tf: BigDecimal::try_from(frequency as f64).map_err(|_| "Error converting to BigDecimal")?,
+            tf: BigDecimal::try_from(normalized_frequency).map_err(|_| "Error converting to BigDecimal")?,
             idf: BigDecimal::try_from(idf).map_err(|_| "Error converting to BigDecimal")?,
             tfidf: BigDecimal::try_from(tfidf).map_err(|_| "Error converting to BigDecimal")?,
         };
