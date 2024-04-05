@@ -25,7 +25,7 @@ impl Crawler {
             // Start the crawler in background.
             // Initialize Website instance with Amazon's URL
             let mut website: Website = Website::new(&url.to_string());
-
+            website.configuration.respect_robots_txt = true;
             // Subscribe to receive pages. Adjust the channel size as needed.
             let mut rx = website.subscribe(3).unwrap();
             let mut rx_guard = website.subscribe_guard().unwrap();

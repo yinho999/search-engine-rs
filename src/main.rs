@@ -1,12 +1,13 @@
 use std::path::PathBuf;
 use crossbeam_channel::unbounded;
 use sqlx::PgPool;
-use seach_engine::services::{Crawler, FileReader, PageParser, SitePool, TextPool};
+use search_engine::services::{Crawler, FileReader, PageParser, SitePool, TextPool};
+
 #[macro_use]
 extern crate dotenv_codegen;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>>{
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Open the CSV file - https://tranco-list.eu/list/XJJZN/1000000, need to add "rank,root_domain" as the first line
     let sites_path = dotenv!("SITES_PATH");
     let sites_path_buf = PathBuf::from(sites_path);
@@ -22,10 +23,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
         .host(host)
         .port(port)
         .username(username)
-        .password( password)
+        .password(password)
         .database(database);
-    let db = PgPool::connect_with(db_options).await.map_err(|e| format!("Error connecting to database: {:?}", e))?;
-    
+    let db = PgPool::connect_with(db_options).await.map_err(|e| {println!("Error connecting to database: {:?}", e);e})?;
+
     // url channel
     let (url_sender, url_receiver) = unbounded();
     // crawler channel
@@ -34,9 +35,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
     let (page_sender, page_receiver) = unbounded();
     // text channel
     let (text_sender, text_receiver) = unbounded();
-    
+
     // Create a new FileReader
-    let file_reader = FileReader::new(sites_path_buf, url_sender).await.map_err(|e| format!("Error creating file reader: {:?}", e))?;
+    let file_reader = FileReader::new(sites_path_buf, url_sender).await.map_err(|e| {
+        println!("Error creating file reader: {:?}", e);
+        e
+    })?;
     // Create a site pool
     let site_pool = SitePool::new(url_receiver, crawler_sender);
     // Create multiple crawlers
@@ -46,11 +50,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
         crawlers.push(crawler);
     }
     // Create Page Parser
-    let page_parser =  PageParser::new(page_receiver, text_sender, lemmatizer_json_path_buf).map_err(|e| format!("Error creating page parser: {:?}", e))?;
-    
+    let page_parser = PageParser::new(page_receiver, text_sender, lemmatizer_json_path_buf).map_err(|e| {
+        format!("Error creating page parser: {:?}", e);
+        e
+    })?;
+
     // Create a text pool
     let text_pool = TextPool::new(text_receiver, db);
-    
+
     // Start all services
     tokio::spawn(async move {
         file_reader.start().await;
@@ -68,6 +75,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>{
     });
     tokio::spawn(async move {
         text_pool.start().await;
-    }).await.map_err(|e| format!("Error starting text pool: {:?}", e))?;
+    }).await.map_err(|e| {
+        println!("Error starting text pool: {:?}", e);
+        e
+    })?;
     Ok(())
 }

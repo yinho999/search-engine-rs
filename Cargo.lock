@@ -2060,7 +2060,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "seach-engine"
+name = "search-engine"
 version = "0.1.0"
 dependencies = [
  "bigdecimal 0.4.3",
